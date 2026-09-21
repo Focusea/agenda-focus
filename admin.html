@@ -382,17 +382,49 @@ async function loadProducts(){
         : "Cancelar esta venda? O produto voltará para o estoque e, se houver lançamento financeiro, ele será revertido.";
        if(!confirm(msg))return;
        cancel.disabled=true;cancel.textContent="Cancelando...";
-       try{
-         const {data:result,error}=await sb.rpc("admin_cancel_product_order",{p_order_id:v.id});
-         if(error||!result?.[0]?.success)throw new Error(error?.message||result?.[0]?.message||"Não foi possível cancelar.");
-         note($("productsMsg"),result[0].message,"ok");
-         await loadProducts();
-         await loadStock();
-         await loadAgenda();
-         await loadFinance();
-       }catch(err){
-         note($("productsMsg"),"Não foi possível cancelar: "+(err?.message||err),"error");
-         cancel.disabled=false;cancel.textContent="Cancelar pedido / devolver estoque";
+       try {
+  const { data: result, error } = await sb.rpc(
+    "cancel_product_order",
+    {
+      p_order_id: v.id
+    }
+  );
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  if (!result || result.success !== true) {
+    throw new Error(
+      result?.message || "Não foi possível cancelar o pedido."
+    );
+  }
+
+  note(
+    $("#productsMsg"),
+    result.message || "Pedido cancelado e produto devolvido ao estoque.",
+    "ok"
+  );
+
+  await loadProducts();
+  await loadStock();
+  await loadAgenda();
+  await loadFinance();
+
+} catch (err) {
+
+  console.error("Erro ao cancelar pedido:", err);
+
+  note(
+    $("#productsMsg"),
+    "Não foi possível cancelar: " +
+      (err?.message || err),
+    "error"
+  );
+
+  cancel.disabled = false;
+  cancel.textContent = "Cancelar pedido / devolver estoque";
+       }
        }
      };
      actions.appendChild(cancel);
